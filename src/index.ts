@@ -129,6 +129,43 @@ server.registerTool(
   },
 );
 
+// 4. Tool: Automatic Release Notes
+server.registerTool(
+  "release_notes",
+  {
+    title: "Release Notes Generator",
+    description:
+      "Generate markdown release notes from recently merged pull requests",
+    inputSchema: {
+      owner: z.string(),
+      repo: z.string(),
+    },
+  },
+  async ({ owner, repo }) => {
+    const { data: prs } = await octokit.pulls.list({
+      owner,
+      repo,
+      state: "closed",
+      per_page: 10,
+    });
+    const notes = prs
+      .filter((pr) => pr.merged_at)
+      .map((pr) => `- ${pr.title} (#${pr.number}) by @${pr.user?.login}`)
+      .join("\n");
+
+    const output = { notes: notes || "No recent merged PRs found." };
+    return {
+      content: [
+        {
+          type: "text",
+          text: `## Proposed Release Notes\n${output.notes}`,
+        },
+      ],
+      structuredContent: output,
+    };
+  },
+);
+
 // ============================================================================
 // Express App Setup
 // ============================================================================
