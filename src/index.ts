@@ -95,6 +95,40 @@ server.registerTool(
   },
 );
 
+// 3. Tool: Weekly Digest
+server.registerTool(
+  "weekly_digest",
+  {
+    title: "Weekly Digest",
+    description:
+      "Get a summary of repository activity from the last 7 days",
+    inputSchema: {
+      owner: z.string(),
+      repo: z.string(),
+    },
+  },
+  async ({ owner, repo }) => {
+    const sevenDaysAgo = new Date(
+      Date.now() - 7 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const { data: issues } = await octokit.issues.listForRepo({
+      owner,
+      repo,
+      state: "all",
+      since: sevenDaysAgo,
+    });
+
+    const output = {
+      count: issues.length,
+      summary: `Last 7 days: ${issues.length} updates in ${owner}/${repo}.`,
+    };
+    return {
+      content: [{ type: "text", text: output.summary }],
+      structuredContent: output,
+    };
+  },
+);
+
 // ============================================================================
 // Express App Setup
 // ============================================================================
