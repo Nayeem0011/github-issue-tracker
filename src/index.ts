@@ -166,6 +166,32 @@ server.registerTool(
   },
 );
 
+// 5. Tool: Commenting
+server.registerTool(
+  "add_comment",
+  {
+    title: "Add Comment",
+    description: "Post a comment on a GitHub issue or pull request",
+    inputSchema: {
+      owner: z.string(),
+      repo: z.string(),
+      issue_number: z.number(),
+      body: z.string().describe("The text of the comment"),
+    },
+  },
+  async ({ owner, repo, issue_number, body }) => {
+    await octokit.issues.createComment({ owner, repo, issue_number, body });
+    const output = {
+      status: "success",
+      message: `Comment added to #${issue_number}`,
+    };
+    return {
+      content: [{ type: "text", text: output.message }],
+      structuredContent: output,
+    };
+  },
+);
+
 // ============================================================================
 // Express App Setup
 // ============================================================================
