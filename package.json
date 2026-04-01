@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.23.0",
+    "@octokit/rest": "^22.0.1",
     "chalk": "^5.4.1",
     "express": "^5.1.0",
     "zod": "^4.0.0"

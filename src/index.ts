@@ -4,6 +4,7 @@ import express, { Request, Response } from "express";
 import { z } from "zod";
 import chalk from "chalk";
 import { hello, echo } from "./tools.js";
+import { Octokit } from "@octokit/rest";
 
 
 // ============================================================================
@@ -15,6 +16,43 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
+const octokit = new Octokit({
+  auth: process.env.GITHUB_TOKEN,
+});
+
+// 1. Tool: View Issue List
+server.registerTool(
+  "list_issues",
+  {
+    title: "List Issues",
+    description: "Fetch a list of issues from a GitHub repository",
+    inputSchema: {
+      owner: z.string().describe("Repository owner"),
+      repo: z.string().describe("Repository name"),
+      state: z
+        .enum(["open", "closed", "all"])
+        .default("open")
+        .describe("Status of issues"),
+    },
+  },
+  async ({ owner, repo, state }) => {
+    const { data: issues } = await octokit.issues.listForRepo({
+      owner,
+      repo,
+      state,
+      per_page: 10,
+    });
+    const list = issues
+      .filter((i) => !i.pull_request)
+      .map((i) => `#${i.number}: ${i.title}`)
+      .join("\n");
+    const output = { issues: list || "No issues found." };
+    return {
+      content: [{ type: "text", text: output.issues }],
+      structuredContent: output,
+    };
+  },
+);
 
 // ============================================================================
 // Express App Setup
@@ -68,4 +106,3 @@ process.on("SIGTERM", () => {
     process.exit(0);
   });
 });
-
