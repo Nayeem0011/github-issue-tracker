@@ -54,6 +54,47 @@ server.registerTool(
   },
 );
 
+// 2. Tool: Issue Triage
+server.registerTool(
+    "triage_issue",
+    {
+        title: "Triage Issue",
+        description: "Automatically label an issue as 'bug' or 'enhancement'",
+        inputSchema: {
+            owner: z.string(),
+            repo: z.string(),
+            issue_number: z.number().describe("The issue number to triage"),
+        },
+    },
+    async ({ owner, repo, issue_number }) => {
+        const { data: issue } = await octokit.issues.get({
+            owner,
+            repo,
+            issue_number,
+        });
+        const label = (issue.title + (issue.body || ""))
+            .toLowerCase()
+            .includes("bug")
+            ? "bug"
+            : "enhancement";
+        await octokit.issues.addLabels({
+            owner,
+            repo,
+            issue_number,
+            labels: [label],
+        });
+
+        const output = {
+            message: `Issue #${issue_number} labeled as: ${label}`,
+            label,
+        };
+        return {
+            content: [{ type: "text", text: output.message }],
+            structuredContent: output,
+        };
+    },
+);
+
 // ============================================================================
 // Express App Setup
 // ============================================================================
